@@ -1,0 +1,72 @@
+name: staging-deploy
+
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'The environment where you want to deploy the given version'
+        required: true
+        default: 'one'
+        type: choice
+        options:
+        - one
+        - two
+        - three        
+      version_tag:
+        description: 'The version-tag to deploy'
+        required: true
+      branch:
+        description: 'The branch to deploy'
+        required: true  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout staging-deployment tools
+        uses: actions/checkout@v3
+        with:
+          repository: repo
+          token: $PAT
+     
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume:   #change to reflect your IAM role’s ARN
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: #region
+
+      - name: Add parameters and update
+        run: |
+          ENVIRONMENT=${{ github.event.inputs.environment }}
+          VERSION_TAG=${{ github.event.inputs.version_tag }}       
+
+      - name: Announce in slack
+        env:
+          #VAR LIKE BOT NAME BRANCH
+
+        run: |
+          ANNOUNCEMENT_TEXT="\`${VERSION_TAG}\`deployed to \`${INPUT_ENVIRONMENT}\`"
+          PAYLOAD=$(cat << EOD
+            {
+              "text": "${ANNOUNCEMENT_TEXT}",
+              "channel": "${SLACK_CHANNEL}",
+              "username": "${SLACK_USERNAME}",
+              "icon_emoji": "sunglasses",
+              "attachments": [
+                {
+                  "color": "success",
+                  "text": "\`\`\`Branch : ${BRANCH}\`\`\`"
+                }
+              ]
+            }
+          EOD
+          )
+          curl --header "Content-Type: application/json" \
+            --request POST \
+            --data "${PAYLOAD}" \
+            ${{ secrets.SLACK_WEBHOOK_URL }}

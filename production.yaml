@@ -1,0 +1,30 @@
+version: '3.8'
+
+volumes:
+#IF some mapping is required 
+
+services:
+  go:
+    build:
+      context: ./go_app
+      dockerfile: ./Dockerfile
+    image: go_app:${VERSION_TAG}
+    env_file: env.example
+    ports:
+    
+  nextjs:
+    build:
+      context: ./next_app
+      dockerfile: ./Dockerfile
+    image: next_app:${VERSION_TAG}
+    env_file: env.example
+    ports:
+
+  wp:
+    build:
+      context: ./wp_app
+      dockerfile: ./Dockerfile
+    image: wp_app:${VERSION_TAG}
+    env_file: env.example
+    ports:
+    
